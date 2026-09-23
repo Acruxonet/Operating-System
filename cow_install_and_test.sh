@@ -59,7 +59,11 @@ if [ "${COW_SKIP_CHECKOUT:-0}" != 1 ] && [ -d .git ]; then
   current_branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
   if [ "$current_branch" != cow ]; then
     if ! git diff --quiet || ! git diff --cached --quiet; then
-      git stash save 'Saved automatically before COW lab' >/dev/null
+      GIT_AUTHOR_NAME='Xv6 lab backup' \
+      GIT_AUTHOR_EMAIL='xv6-lab-backup@localhost' \
+      GIT_COMMITTER_NAME='Xv6 lab backup' \
+      GIT_COMMITTER_EMAIL='xv6-lab-backup@localhost' \
+        git stash save 'Saved automatically before COW lab' >/dev/null
       echo 'Existing tracked changes saved in git stash.'
     fi
     if git show-ref --verify --quiet refs/heads/cow; then
