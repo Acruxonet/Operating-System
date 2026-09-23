@@ -81,7 +81,7 @@ tar -xzf "$ARCHIVE" -C "$TMP_DIR"
 
 cd "$REPO"
 if [ "${BUDDY_SKIP_CHECKOUT:-0}" != 1 ] && [ -d .git ]; then
-  current_branch=$(git branch --show-current)
+  current_branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
   if [ "$current_branch" != lazy ]; then
     git diff -- kernel/buddy.c kernel/file.c kernel/kalloc.c > /tmp/xv6-buddy-preinstall.patch || true
     git checkout -- kernel/buddy.c kernel/file.c kernel/kalloc.c
