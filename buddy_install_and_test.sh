@@ -81,6 +81,11 @@ tar -xzf "$ARCHIVE" -C "$TMP_DIR"
 
 cd "$REPO"
 if [ "${BUDDY_SKIP_CHECKOUT:-0}" != 1 ] && [ -d .git ]; then
+  current_branch=$(git branch --show-current)
+  if [ "$current_branch" != lazy ]; then
+    git diff -- kernel/buddy.c kernel/file.c kernel/kalloc.c > /tmp/xv6-buddy-preinstall.patch || true
+    git checkout -- kernel/buddy.c kernel/file.c kernel/kalloc.c
+  fi
   git checkout lazy >/dev/null 2>&1 || {
     echo 'ERROR: cannot switch to the lazy branch. Commit or stash existing changes first.' >&2
     exit 1
