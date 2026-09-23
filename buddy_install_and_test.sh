@@ -73,18 +73,23 @@ tar -tzf "$ARCHIVE" | grep -Eq '^kernel/file\.c$' || {
   echo 'ERROR: archive does not contain kernel/file.c' >&2
   exit 1
 }
+tar -tzf "$ARCHIVE" | grep -Eq '^kernel/kalloc\.c$' || {
+  echo 'ERROR: archive does not contain kernel/kalloc.c' >&2
+  exit 1
+}
 tar -xzf "$ARCHIVE" -C "$TMP_DIR"
 
 cd "$REPO"
 if [ "${BUDDY_SKIP_CHECKOUT:-0}" != 1 ] && [ -d .git ]; then
-  git checkout alloc >/dev/null 2>&1 || {
-    echo 'ERROR: cannot switch to the alloc branch. Commit or stash existing changes first.' >&2
+  git checkout lazy >/dev/null 2>&1 || {
+    echo 'ERROR: cannot switch to the lazy branch. Commit or stash existing changes first.' >&2
     exit 1
   }
 fi
 
 cp "$TMP_DIR/kernel/buddy.c" kernel/buddy.c
 cp "$TMP_DIR/kernel/file.c" kernel/file.c
+cp "$TMP_DIR/kernel/kalloc.c" kernel/kalloc.c
 git diff --check >/dev/null 2>&1 || {
   echo 'ERROR: installed source failed git diff --check.' >&2
   exit 1
