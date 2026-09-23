@@ -64,7 +64,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo '[1/4] Installing buddy solution...'
+echo '[1/5] Installing buddy and lazy solution...'
 tar -tzf "$ARCHIVE" | grep -Eq '^kernel/buddy\.c$' || {
   echo 'ERROR: archive does not contain kernel/buddy.c' >&2
   exit 1
@@ -77,6 +77,12 @@ tar -tzf "$ARCHIVE" | grep -Eq '^kernel/kalloc\.c$' || {
   echo 'ERROR: archive does not contain kernel/kalloc.c' >&2
   exit 1
 }
+for source in defs.h proc.c sysproc.c trap.c vm.c; do
+  tar -tzf "$ARCHIVE" | grep -Eq "^kernel/$source\$" || {
+    echo "ERROR: archive does not contain kernel/$source" >&2
+    exit 1
+  }
+done
 tar -xzf "$ARCHIVE" -C "$TMP_DIR"
 
 cd "$REPO"
@@ -95,6 +101,11 @@ fi
 cp "$TMP_DIR/kernel/buddy.c" kernel/buddy.c
 cp "$TMP_DIR/kernel/file.c" kernel/file.c
 cp "$TMP_DIR/kernel/kalloc.c" kernel/kalloc.c
+cp "$TMP_DIR/kernel/defs.h" kernel/defs.h
+cp "$TMP_DIR/kernel/proc.c" kernel/proc.c
+cp "$TMP_DIR/kernel/sysproc.c" kernel/sysproc.c
+cp "$TMP_DIR/kernel/trap.c" kernel/trap.c
+cp "$TMP_DIR/kernel/vm.c" kernel/vm.c
 git diff --check >/dev/null 2>&1 || {
   echo 'ERROR: installed source failed git diff --check.' >&2
   exit 1
@@ -113,12 +124,13 @@ build_failed() {
   exit 1
 }
 
-echo '[2/4] Building xv6...'
+echo '[2/5] Building xv6...'
 make TOOLPREFIX="$TOOLPREFIX" CFLAGS="$CFLAGS" clean >"$BUILD_LOG" 2>&1 || build_failed
 make TOOLPREFIX="$TOOLPREFIX" CFLAGS="$CFLAGS" -j4 kernel/kernel fs.img >>"$BUILD_LOG" 2>&1 || build_failed
 
-echo '[3/4] Running alloctest...'
-echo '[4/4] Running usertests...'
+echo '[3/5] Running alloctest...'
+echo '[4/5] Running lazytests...'
+echo '[5/5] Running usertests...'
 
 XV6_REPO=$REPO XV6_QEMU=$QEMU XV6_TEST_LOG=$TEST_LOG "$PYTHON" <<'PY'
 import os
@@ -190,6 +202,17 @@ def run_tests(cpu_args):
                 if expected not in alloc_output:
                     raise RuntimeError(f"alloctest did not report {expected.decode()}")
 
+            send("lazytests")
+            lazy_output = read_until(b"\n$ ", 300)
+            for expected in (
+                b"test lazy alloc: OK",
+                b"test lazy unmap: OK",
+                b"test out of memory: OK",
+                b"ALL TESTS PASSED",
+            ):
+                if expected not in lazy_output:
+                    raise RuntimeError(f"lazytests did not report {expected.decode()}")
+
             send("usertests")
             user_output = read_until(b"\n$ ", 600)
             if b"ALL TESTS PASSED" not in user_output:
@@ -231,6 +254,7 @@ else:
 print("=" * 54)
 print("BUDDY LAB: ALL TESTS PASSED")
 print("alloctest: filetest OK, memtest OK")
+print("lazytests: lazy alloc OK, lazy unmap OK, out of memory OK")
 print("usertests: ALL TESTS PASSED")
 print("Ready for Submit Evaluation")
 print("=" * 54)
