@@ -30,6 +30,18 @@ TOOLPREFIX=${TOOLPREFIX:-$(find_toolprefix || true)}
 QEMU=${QEMU:-$(command -v qemu-system-riscv64 || true)}
 PYTHON=${PYTHON:-$(command -v python3 || true)}
 
+if [ -z "$REPO" ]; then
+  if ! command -v git >/dev/null 2>&1; then
+    echo 'ERROR: git is required to clone the xv6 filesystem branch.' >&2
+    exit 1
+  fi
+  REPO=${HOME}/xv6-riscv
+  if [ ! -d "$REPO/.git" ]; then
+    echo '[0/4] Cloning the xv6 filesystem branch...'
+    git clone --branch fs https://github.com/matlapo/xv6-riscv.git "$REPO"
+  fi
+fi
+
 if [ ! -f "$ARCHIVE" ]; then
   echo "ERROR: missing $ARCHIVE" >&2
   exit 1
